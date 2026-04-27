@@ -1,2 +1,11 @@
-# Ignore the csv files in the Data sets folder since they are large and we don't want to accidentally commit them to GitHub.
+# Ignore the csv files in the Data sets folder 
 Data sets/*.csv
+
+
+#ignore all the .env 
+**/*.env
+
+
+# IGNORE AL CSV FILES
+*.csv
+**/*.csv
