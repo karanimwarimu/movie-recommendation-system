@@ -30,7 +30,7 @@ import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Query , requests
 from pydantic import BaseModel, Field
-import requests
+
 
 warnings.filterwarnings("ignore")
 np.random.seed(42)
