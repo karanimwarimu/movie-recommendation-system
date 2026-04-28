@@ -35,8 +35,40 @@ load_dotenv()
 # ─────────────────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────────────────
-BACKEND_URL = os.getenv("BACKEND_URL", "").rstrip("/")
+
+#BACKEND_URL = os.getenv("BACKEND_URL", "").rstrip("/")
 RATING_MAX = 5.0
+
+
+# This checks Streamlit Secrets first, then falls back to environment variables
+def get_backend_url() -> str:
+    """
+    Resolve backend URL in this order:
+    1. Streamlit secrets: [backend] url = "..."
+    2. Environment variable: BACKEND_URL
+    3. Empty string
+    """
+
+    try:
+        url = st.secrets.get("backend", {}).get("url", "")
+    except Exception:
+        url = ""
+
+    if not url:
+        url = os.getenv("BACKEND_URL", "")
+
+    return url.rstrip("/")
+
+
+BACKEND_URL = get_backend_url()
+
+if not BACKEND_URL:
+    st.error(
+        "Backend URL is not configured. "
+        "Set [backend].url in Streamlit Secrets or BACKEND_URL as an environment variable."
+    )
+    st.stop()
+
 
 st.set_page_config(
     page_title="🎬 Movie Recommender Pro",
