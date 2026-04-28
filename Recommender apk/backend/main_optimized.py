@@ -28,7 +28,9 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Query , requests
+from fastapi import FastAPI, HTTPException, Query 
+import requests
+from requests.exceptions import HTTPError, Timeout
 from pydantic import BaseModel, Field
 
 
