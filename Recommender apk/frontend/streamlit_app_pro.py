@@ -8,7 +8,7 @@ The backend loads pre-trained joblib artifacts from the artifacts/ directory.
 
 Environment variable: BACKEND_URL (default: http://localhost:8000) --- for testing purposes and remote deployment (point to your cloud backend URL).
 
-How to run the full stack:
+How to run the full stack: (IF RUN LOCALLY)
 --------------------------
 1. Generate artifacts (one-time):
        cd .. && python train_and_save.py
@@ -21,19 +21,21 @@ How to run the full stack:
        cd ../frontend
        streamlit run streamlit_app_pro.py
 
-Or use docker-compose if configured.
+Or use docker-compose if configured. DESCRIPTION IN THE DEPLOY FILE FOR MORE DETAILS.
 """
 
 import os
 from typing import Any
-
 import requests
 import streamlit as st
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ─────────────────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────────────────
-BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000").rstrip("/")
+BACKEND_URL = os.getenv("BACKEND_URL", "").rstrip("/")
 RATING_MAX = 5.0
 
 st.set_page_config(
@@ -182,13 +184,13 @@ def fetch_recommendations(query: str, user_id: int | None, top_k: int) -> dict[s
         resp.raise_for_status()
         return resp.json()
     except requests.exceptions.ConnectionError:
-        st.error("❌ Cannot connect to backend. Is main_pro.py running?")
+        st.error(" Cannot connect to backend. Is main_pro.py running?")
         return None
     except requests.exceptions.HTTPError as e:
-        st.error(f"❌ Backend error: {e}")
+        st.error(f" Backend error: {e}")
         return None
     except Exception as e:
-        st.error(f"❌ Unexpected error: {e}")
+        st.error(f" Unexpected error: {e}")
         return None
 
 
@@ -233,21 +235,21 @@ with st.sidebar:
     backend_input = st.text_input(
         "Backend URL",
         value=BACKEND_URL,
-        help="FastAPI backend address (main_pro.py). Change if deploying remotely.",
+        help="FastAPI backend address (main_OPTIMIZED.py). Change if deploying remotely.",
     )
     st.markdown("---")
     st.markdown("### About")
     st.markdown(
         """
 **Architecture (Pro):**
-- 🤝 FastAPI backend (`main_pro.py`) loads pre-trained artifacts
-- 🎨 Streamlit frontend (thin client)
-- 🔀 Hybrid SVD + Content-Based
-- ❄️ Cold-Start aware
-- ⚡ Zero training on startup — instant load
+-  FastAPI backend (`main_OPTIMIZED.py`) loads pre-trained artifacts
+-  Streamlit frontend (thin client)
+-  Hybrid SVD + Content-Based
+-  Cold-Start aware
+-  Zero training on startup — instant load
 
 The backend loads serialized models via `joblib`.
-Run `python train_and_save.py` once to generate artifacts.
+
 """
     )
 
@@ -261,7 +263,7 @@ if backend_input.strip():
 st.markdown(
     """
 <div class="hero">
-    <h1>🎬 Movie Recommendation System <span style="font-size:0.6em; color:#6c77e8;">PRO</span></h1>
+    <h1>🎬 OPTIMIZED  MOVIE RECOMMENDER <span style="font-size:0.6em; color:#6c77e8;">MK3.2</span></h1>
     <p>Artifact-loaded Hybrid SVD + Content-Based engine with cold-start handling —
        search by title, keyword, genre, year, or any clue.</p>
 </div>
@@ -274,12 +276,12 @@ st.markdown(
 # ─────────────────────────────────────────────────────────
 health = fetch_health()
 if health and health.get("models_loaded"):
-    st.success("✅ Backend connected — models loaded from artifacts.")
+    st.success(" Backend connected — models loaded from artifacts.")
 elif health:
-    st.warning("⚠️ Backend connected but models not yet loaded.")
+    st.warning(" Backend connected but models not yet loaded.")
 else:
     st.error(
-        "❌ Backend unreachable. Please start `main_pro.py` first:\n\n"
+        " Backend unreachable. Please start `main_OPTIMIZED.py`(running in {BACKEND_URL}) first:\n\n"
         "```bash\ncd backend && uvicorn main_pro:app --host 0.0.0.0 --port 8000\n```"
     )
 
@@ -305,7 +307,7 @@ if stats:
         )
     st.markdown("<br>", unsafe_allow_html=True)
 else:
-    st.warning("⚠️ Backend stats unavailable. Check that main_pro.py is running.")
+    st.warning(f" Backend stats unavailable. Check that main_OPTIMIZED.py is running on {BACKEND_URL}.")
 
 # ─────────────────────────────────────────────────────────
 # INPUT FORM
