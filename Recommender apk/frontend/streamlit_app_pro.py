@@ -1,8 +1,27 @@
 """
-Movie Recommender — Streamlit Frontend (Thin Client)
+Movie Recommender — Streamlit Frontend (Pro Version)
 =====================================================
-Calls the FastAPI backend for all model logic.
-Environment variable: BACKEND_URL (default: http://localhost:8000)
+Designed to work with backend/main_pro.py (artifact-loading backend).
+
+No model training happens in this file or in the backend on startup.
+The backend loads pre-trained joblib artifacts from the artifacts/ directory.
+
+Environment variable: BACKEND_URL (default: http://localhost:8000) --- for testing purposes and remote deployment (point to your cloud backend URL).
+
+How to run the full stack:
+--------------------------
+1. Generate artifacts (one-time):
+       cd .. && python train_and_save.py
+
+2. Start the backend (loads artifacts, no training):
+       cd ../backend
+       uvicorn main_pro:app --host 0.0.0.0 --port 8000
+
+3. Start this frontend (in a new terminal):
+       cd ../frontend
+       streamlit run streamlit_app_pro.py
+
+Or use docker-compose if configured.
 """
 
 import os
@@ -18,7 +37,7 @@ BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000").rstrip("/")
 RATING_MAX = 5.0
 
 st.set_page_config(
-    page_title="🎬 Movie Recommender",
+    page_title="🎬 Movie Recommender Pro",
     page_icon="🎬",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -146,6 +165,16 @@ def fetch_stats() -> dict[str, Any] | None:
         return None
 
 
+@st.cache_data(ttl=60)
+def fetch_health() -> dict[str, Any] | None:
+    try:
+        resp = requests.get(f"{BACKEND_URL}/health", timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception:
+        return None
+
+
 def fetch_recommendations(query: str, user_id: int | None, top_k: int) -> dict[str, Any] | None:
     payload = {"query": query, "user_id": user_id, "top_k": top_k}
     try:
@@ -153,7 +182,7 @@ def fetch_recommendations(query: str, user_id: int | None, top_k: int) -> dict[s
         resp.raise_for_status()
         return resp.json()
     except requests.exceptions.ConnectionError:
-        st.error("❌ Cannot connect to backend. Is the API running?")
+        st.error("❌ Cannot connect to backend. Is main_pro.py running?")
         return None
     except requests.exceptions.HTTPError as e:
         st.error(f"❌ Backend error: {e}")
@@ -204,20 +233,21 @@ with st.sidebar:
     backend_input = st.text_input(
         "Backend URL",
         value=BACKEND_URL,
-        help="FastAPI backend address. Change if deploying remotely.",
+        help="FastAPI backend address (main_pro.py). Change if deploying remotely.",
     )
     st.markdown("---")
     st.markdown("### About")
     st.markdown(
         """
-**Architecture:**
-- 🤝 FastAPI backend (model + data)
+**Architecture (Pro):**
+- 🤝 FastAPI backend (`main_pro.py`) loads pre-trained artifacts
 - 🎨 Streamlit frontend (thin client)
 - 🔀 Hybrid SVD + Content-Based
 - ❄️ Cold-Start aware
+- ⚡ Zero training on startup — instant load
 
-The UI sends queries to the backend API
-and renders the returned recommendations.
+The backend loads serialized models via `joblib`.
+Run `python train_and_save.py` once to generate artifacts.
 """
     )
 
@@ -231,13 +261,27 @@ if backend_input.strip():
 st.markdown(
     """
 <div class="hero">
-    <h1>🎬 Movie Recommendation System</h1>
-    <p>Hybrid SVD + Content-Based engine with cold-start handling —
+    <h1>🎬 Movie Recommendation System <span style="font-size:0.6em; color:#6c77e8;">PRO</span></h1>
+    <p>Artifact-loaded Hybrid SVD + Content-Based engine with cold-start handling —
        search by title, keyword, genre, year, or any clue.</p>
 </div>
 """,
     unsafe_allow_html=True,
 )
+
+# ─────────────────────────────────────────────────────────
+# BACKEND HEALTH CHECK
+# ─────────────────────────────────────────────────────────
+health = fetch_health()
+if health and health.get("models_loaded"):
+    st.success("✅ Backend connected — models loaded from artifacts.")
+elif health:
+    st.warning("⚠️ Backend connected but models not yet loaded.")
+else:
+    st.error(
+        "❌ Backend unreachable. Please start `main_pro.py` first:\n\n"
+        "```bash\ncd backend && uvicorn main_pro:app --host 0.0.0.0 --port 8000\n```"
+    )
 
 # ─────────────────────────────────────────────────────────
 # QUICK STATS (from backend)
@@ -261,7 +305,7 @@ if stats:
         )
     st.markdown("<br>", unsafe_allow_html=True)
 else:
-    st.warning("⚠️ Backend unreachable — stats unavailable. Check that the API is running.")
+    st.warning("⚠️ Backend stats unavailable. Check that main_pro.py is running.")
 
 # ─────────────────────────────────────────────────────────
 # INPUT FORM
@@ -377,7 +421,8 @@ if run:
 st.markdown("<br><br>", unsafe_allow_html=True)
 st.markdown(
     "<div style='text-align:center; color:#3d4266; font-size:0.8rem;'>"
-    "Movie Recommendation System · Hybrid SVD + Content-Based · Cold-Start Aware · Cloud-Ready"
+    "Movie Recommendation System Pro · Artifact-Loaded Backend · Hybrid SVD + Content-Based · Cold-Start Aware"
     "</div>",
     unsafe_allow_html=True,
 )
+

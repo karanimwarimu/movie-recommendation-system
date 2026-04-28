@@ -13,10 +13,12 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY main.py .
+COPY . .
 
 #use renders dynamic port for cloud deploy
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port $PORT"]
+#CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port $PORT"]
+
+CMD ["sh", "-c", "uvicorn main_optimized:app --host 0.0.0.0 --port $PORT"]
 
 # The dataset is mounted at runtime or copied in via build context.
 # For cloud deploy, ensure final_dataset.csv is in the build context.
