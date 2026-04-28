@@ -1,6 +1,6 @@
 # 🎬 Movie Recommendation System
 
-A production-ready hybrid movie recommendation system that delivers the top 5 personalized movie suggestions to users based on their preferences. The system combines collaborative filtering with content-based techniques, handles cold-start scenarios gracefully, and is packaged for cloud deployment with a modern microservices architecture.
+A production-ready hybrid movie recommendation system that delivers top  personalized movie suggestions to users based on their preferences. The system combines collaborative filtering with content-based techniques, handles cold-start scenarios gracefully, and is packaged for cloud deployment with a modern microservices architecture.
 
 
 
@@ -31,7 +31,7 @@ A production-ready hybrid movie recommendation system that delivers the top 5 pe
 
 Streaming platforms contain thousands of movies, making it difficult for users to quickly find content they will enjoy. Traditional recommendation systems rely on limited user–item interactions and struggle with the cold start problem, producing generic and less relevant suggestions.
 
-This project develops a hybrid recommendation system that combines collaborative and content-based techniques to generate accurate personalized Top-5 movie recommendations in both data-rich and data-sparse scenarios.
+This project develops a hybrid recommendation system that combines collaborative and content-based techniques to generate accurate personalized  movie recommendations in both data-rich and data-sparse scenarios.
 
 ---
 
@@ -42,7 +42,7 @@ This project solves the classic information overload problem on streaming platfo
 
 ### What It Does
 
-- **Personalized Recommendations:** Suggests the top 5 movies tailored to each user's taste
+- **Personalized Recommendations:** Suggests  top  movies tailored to each user's taste
 - **Multi-Input Search:** Accepts movie titles, keywords, genres, years, or descriptive clues
 - **Hybrid Intelligence:** Blends collaborative filtering (user behavior) with content-based filtering (movie metadata)
 - **Cold-Start Resilience:** Gracefully handles new users and new movies using intelligent fallbacks
