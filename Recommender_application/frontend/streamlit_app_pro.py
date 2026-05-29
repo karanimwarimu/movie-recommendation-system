@@ -38,7 +38,7 @@ load_dotenv()
 
 #BACKEND_URL = os.getenv("BACKEND_URL", "").rstrip("/")
 RATING_MAX = 5.0
-
+OMDB_API = os.getenv("OMDB_API_KEY", "d293878e")
 
 # This checks Streamlit Secrets first, then falls back to environment variables
 def get_backend_url() -> str:
@@ -68,6 +68,9 @@ if not BACKEND_URL:
         "Set [backend].url in Streamlit Secrets or BACKEND_URL as an environment variable."
     )
     st.stop()
+
+
+
 
 
 st.set_page_config(
@@ -208,6 +211,24 @@ def fetch_health() -> dict[str, Any] | None:
     except Exception:
         return None
 
+@st.cache_data(ttl=3600)
+def fetch_omdb(title: str) -> dict:
+    """Fetch poster, plot, year, rating from OMDb by title."""
+    
+    OMDB_API = os.getenv("OMDB_API_KEY", "d293878e")
+    
+    if not OMDB_API:
+        return {}
+    try:
+        resp = requests.get(
+            "https://www.omdbapi.com/",
+            params={"apikey": OMDB_API, "t": title, "plot": "short"},
+            timeout=5,
+        )
+        data = resp.json()
+        return data if data.get("Response") == "True" else {}
+    except Exception:
+        return {}
 
 def fetch_recommendations(query: str, user_id: int | None, top_k: int) -> dict[str, Any] | None:
     payload = {"query": query, "user_id": user_id, "top_k": top_k}
@@ -237,26 +258,57 @@ MODE_LABELS = {
     "content": ("📖 Content", "badge-content"),
 }
 
-
 def render_movie_card(rank: int, title: str, score: float, mode: str) -> None:
     label_txt, badge_cls = MODE_LABELS.get(mode, ("🔀 Hybrid", "badge-hybrid"))
     fill_pct = int((score / RATING_MAX) * 100)
-    st.markdown(
-        f"""
-    <div class="movie-card">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-            <div class="movie-title">#{rank} &nbsp; {title.title()}</div>
-            <span class="badge {badge_cls}">{label_txt}</span>
-        </div>
-        <div class="movie-score">Predicted score: <b>{score:.2f}</b> / 5.00</div>
-        <div class="score-bar-bg">
-            <div class="score-bar-fill" style="width:{fill_pct}%;"></div>
-        </div>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )
 
+    # Fetch OMDb enrichment
+    omdb = fetch_omdb(title)
+    poster   = omdb.get("Poster", "")
+    plot     = omdb.get("Plot", "")
+    year     = omdb.get("Year", "")
+    rating   = omdb.get("imdbRating", "")
+    imdb_id  = omdb.get("imdbID", "")
+    imdb_url = f"https://www.imdb.com/title/{imdb_id}" if imdb_id else None
+    poster_valid = poster and poster != "N/A"
+
+    col_img, col_info = st.columns([1, 3])
+
+    with col_img:
+        if poster_valid:
+            st.image(poster, use_container_width=False)
+        else:
+            st.markdown(
+                "<div style='background:#1e2130; border:1px solid #3d4266; "
+                "border-radius:8px; height:180px; display:flex; align-items:center; "
+                "justify-content:center; color:#3d4266; font-size:2.5rem;'>🎬</div>",
+                unsafe_allow_html=True,
+            )
+        # IMDb button rendered via native Streamlit (always clickable)
+        if imdb_url:
+            st.link_button("🔗 IMDb", imdb_url, use_container_width=False)
+
+    with col_info:
+        meta = f"{year}  ·  ⭐ {rating}/10" if year and rating else year or ""
+        st.markdown(
+            f"""
+            <div class="movie-card" style="margin-bottom:0; height:100%;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div class="movie-title">#{rank} &nbsp; {title.title()}</div>
+                    <span class="badge {badge_cls}">{label_txt}</span>
+                </div>
+                <div style="color:#7c85c9; font-size:0.8rem; margin-bottom:8px;">{meta}</div>
+                <div style="color:#b0b8c8; font-size:0.85rem; margin-bottom:10px; line-height:1.5;">{plot}</div>
+                <div class="movie-score">Predicted score: <b>{score:.2f}</b> / 5.00</div>
+                <div class="score-bar-bg">
+                    <div class="score-bar-fill" style="width:{fill_pct}%;"></div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+st.markdown("<hr style='border:none; border-top:1px solid #2c3050; margin:8px 0 16px;'>", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────
 # SIDEBAR
@@ -364,6 +416,25 @@ with col_u:
     )
 
 run = st.button("🎬 Get Recommendations", use_container_width=False)
+if st.button("🧪 Test OMDb"):
+   
+
+    key = "d293878e"
+
+    st.write(f"Key found: `{bool(key)}` → `{key[:4]}...`")
+
+    url = "https://www.omdbapi.com/"
+
+    params = {
+        "apikey": key,
+        "t": "Inception",
+        "plot": "short"
+    }
+
+    r = requests.get(url, params=params)
+
+    st.write("Status:", r.status_code)
+    st.json(r.json())
 
 # ─────────────────────────────────────────────────────────
 # RECOMMENDATION LOGIC
