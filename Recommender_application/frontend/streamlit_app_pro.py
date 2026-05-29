@@ -435,7 +435,6 @@ if st.button("🧪 Test OMDb"):
 
     st.write("Status:", r.status_code)
     st.json(r.json())
-
 # ─────────────────────────────────────────────────────────
 # RECOMMENDATION LOGIC
 # ─────────────────────────────────────────────────────────
@@ -462,23 +461,16 @@ if run:
     user_status = result.get("user_status", "anonymous")
     best_alpha = result.get("best_alpha", 0.7)
 
-    if not recs:
+    if not recs and not seed_matches:
         st.info("No movies matched your query. Try a different keyword or title.")
         st.stop()
 
-    # ── Results header ───────────────────────────────────
-    st.markdown(
-        f'<div class="section-header">🎥 Top {len(recs)} Recommendations</div>',
-        unsafe_allow_html=True,
-    )
-
-    # User status banner
+    # ── User status banner ───────────────────────────────────
     if uid is not None:
         if user_status == "new":
             st.info(
                 f"ℹ️ **User {uid}** is new (not in training data). "
-                "Cold-start fallback is active — recommendations are based on "
-                "item popularity and content similarity."
+                "Cold-start fallback is active."
             )
         else:
             st.success(
@@ -486,31 +478,40 @@ if run:
                 f"Using Hybrid model (α = {best_alpha:.2f})."
             )
     else:
-        st.info(
-            "ℹ️ No User ID provided — showing popularity-weighted content matches."
+        st.info("ℹ️ No User ID provided — showing popularity-weighted content matches.")
+
+    # ── SEED MATCHES FIRST (Rich cards) ─────────────────────
+    if seed_matches:
+        st.markdown(
+            f'<div class="section-header">🔍 Matched Seed Movies from Your Query ({len(seed_matches)})</div>',
+            unsafe_allow_html=True,
+        )
+        
+        for i, seed in enumerate(seed_matches, 1):
+            # Use same rich rendering but with "Seed Match" badge
+            render_movie_card(
+                rank=i, 
+                title=seed["title"], 
+                score=seed["score"], 
+                mode="content"  # fallback badge
+            )
+        
+        st.markdown("<hr style='border:none; border-top:2px solid #3d4266; margin:24px 0;'>", unsafe_allow_html=True)
+
+    # ── MAIN RECOMMENDATIONS ────────────────────────────────
+    if recs:
+        st.markdown(
+            f'<div class="section-header">🎥 Top {len(recs)} Recommendations</div>',
+            unsafe_allow_html=True,
         )
 
-    # Render cards
-    for i, rec in enumerate(recs, 1):
-        render_movie_card(i, rec["title"], rec["score"], rec["mode"])
-
-    # ── Seed summary ─────────────────────────────────────
-    if seed_matches:
-        with st.expander("🔎 Matched seed movies from your query"):
-            import pandas as pd
-
-            seed_df = pd.DataFrame(
-                [
-                    {"Title": m["title"].title(), "Match score": f"{m['score']:.2f}"}
-                    for m in seed_matches
-                ]
-            )
-            st.dataframe(seed_df, use_container_width=True, hide_index=True)
+        for i, rec in enumerate(recs, 1):
+            render_movie_card(i, rec["title"], rec["score"], rec["mode"])
 
     # ── Mode legend ──────────────────────────────────────
     st.markdown(
         """
-    <div style="margin-top:18px; color:#7c85c9; font-size:0.82rem;">
+    <div style="margin-top:24px; color:#7c85c9; font-size:0.82rem;">
     <b>Legend:</b> &nbsp;
     <span class="badge badge-hybrid">🔀 Hybrid</span> SVD + Content blend &nbsp;
     <span class="badge badge-coldstart">❄️ Cold-Start</span> Mean-based fallback &nbsp;
